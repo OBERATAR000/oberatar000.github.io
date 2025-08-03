@@ -1,12 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Animal Protein and GDP Narrative Visualization</title>
+  <meta charset="UTF-8" />
+  <title>Animal Protein vs GDP Narrative Visualization</title>
   <script src="https://d3js.org/d3.v5.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     button { margin-right: 10px; padding: 8px 15px; }
     svg { border: 1px solid #ccc; }
+    .tooltip {
+      position: absolute;
+      background: white;
+      border: 1px solid #999;
+      padding: 5px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 14px;
+    }
+    .legend {
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -19,7 +33,11 @@
   <button id="btn3">Scene 3: Low-Income Highlight</button>
 </div>
 
+<!-- Container for visualization -->
 <svg width="800" height="600"></svg>
+
+<!-- Tooltip -->
+<div class="tooltip"></div>
 
 <script src="main.js"></script>
 
