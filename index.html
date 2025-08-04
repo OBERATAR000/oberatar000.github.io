@@ -5,8 +5,14 @@
 <title>Animal Protein vs GDP per Capita Scatterplot</title>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  svg { border: 1px solid #ccc; background: #fafafa; }
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  svg {
+    border: 1px solid #ccc;
+    background: #fafafa;
+  }
   button {
     margin-right: 10px;
     padding: 8px 15px;
@@ -14,12 +20,6 @@
     border: 1px solid #888;
     border-radius: 4px;
     background-color: white;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2);
   }
   .tooltip {
     position: absolute;
@@ -31,16 +31,8 @@
     font-size: 14px;
     opacity: 0;
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: opacity 0.3s;
     max-width: 220px;
     line-height: 1.4;
-  }
-  .legend {
-    font-size: 14px;
-  }
-  .legend rect {
-    stroke: black;
-    stroke-width: 1px;
   }
 </style>
 </head>
@@ -57,145 +49,165 @@
 <div class="tooltip"></div>
 
 <script>
-// Replace this URL with your CSV file URL or path
-const csvUrl = 'data416.csv';
+var csvUrl = 'data416.csv';
 
-// Dimensions and margins
-const margin = {top: 50, right: 160, bottom: 60, left: 80};
-const width = 800 - margin.left - margin.right;
-const height = 600 - margin.top - margin.bottom;
+var margin = {top: 50, right: 160, bottom: 60, left: 80};
+var width = 800 - margin.left - margin.right;
+var height = 600 - margin.top - margin.bottom;
 
-// Color scale for regions
-const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-// Tooltip div
-const tooltip = d3.select('.tooltip');
+var tooltip = d3.select('.tooltip');
 
-const svg = d3.select('svg');
-const g = svg.append('g')
-  .attr('transform', `translate(${margin.left},${margin.top})`);
+var svg = d3.select('svg');
+var g = svg.append('g')
+  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-const xAxisGroup = g.append('g')
-  .attr('transform', `translate(0,${height})`);
+var xAxisGroup = g.append('g')
+  .attr('transform', 'translate(0,' + height + ')');
 
-const yAxisGroup = g.append('g');
+var yAxisGroup = g.append('g');
 
-// Axis labels
-g.append("text")
-  .attr("x", width/2)
-  .attr("y", height + 45)
-  .attr("text-anchor", "middle")
-  .text("GDP per Capita (log scale)");
+g.append('text')
+  .attr('x', width / 2)
+  .attr('y', height + 45)
+  .attr('text-anchor', 'middle')
+  .text('GDP per Capita (log scale)');
 
-g.append("text")
-  .attr("transform", "rotate(-90)")
-  .attr("x", -height/2)
-  .attr("y", -50)
-  .attr("text-anchor", "middle")
-  .text("Share of Daily Calories from Animal Protein (%)");
+g.append('text')
+  .attr('transform', 'rotate(-90)')
+  .attr('x', -height / 2)
+  .attr('y', -50)
+  .attr('text-anchor', 'middle')
+  .text('Share of Daily Calories from Animal Protein (%)');
 
-// Legend group
-const legendGroup = svg.append('g')
-  .attr('transform', `translate(${width + margin.left + 20},${margin.top})`)
+var legendGroup = svg.append('g')
+  .attr('transform', 'translate(' + (width + margin.left + 20) + ',' + margin.top + ')')
   .attr('class', 'legend');
 
-// Number formatter with commas
-const formatNumber = d3.format(',');
+var formatNumber = d3.format(',');
 
-d3.csv(csvUrl, d => ({
-  country: d.Entity,
-  gdp: +d['GDP per capita'],
-  animalProtein: +d['Share of the daily calorie supply that comes from animal protein'],
-  region: d['World regions according to OWID']
-})).then(data => {
-  data = data.filter(d => d.gdp > 0 && d.animalProtein >= 0);
+d3.csv(csvUrl, function(d) {
+  d.gdp = +d['GDP per capita'];
+  d.animalProtein = +d['Share of the daily calorie supply that comes from animal protein'];
+  d.country = d.Entity;
+  d.region = d['World regions according to OWID'];
+  return d;
+}).then(function(data) {
+  
+  // filter out invalid values
+  data = data.filter(function(d) {
+    return d.gdp > 0 && d.animalProtein >= 0;
+  });
 
-  const regions = Array.from(new Set(data.map(d => d.region)));
+  // extract unique regions
+  var regions = [];
+  data.forEach(function(d) {
+    if (regions.indexOf(d.region) === -1) {
+      regions.push(d.region);
+    }
+  });
   colorScale.domain(regions);
 
-  const xScale = d3.scaleLog()
-    .domain(d3.extent(data, d => d.gdp))
+  var xExtent = d3.extent(data, function(d) { return d.gdp; });
+  var xScale = d3.scaleLog()
+    .domain(xExtent)
     .range([0, width])
     .nice();
 
-  // Compute max and round it up to nearest 10 for even y-axis ticks
-  const maxY = Math.ceil(d3.max(data, d => d.animalProtein) / 10) * 10;
-
-  const yScale = d3.scaleLinear()
+  // Round max Y up to nearest 10 for cleaner ticks
+  var maxAnimalProtein = d3.max(data, function(d) { return d.animalProtein; });
+  var maxY = Math.ceil(maxAnimalProtein / 10) * 10;
+  var yScale = d3.scaleLinear()
     .domain([0, maxY])
     .range([height, 0]);
 
-  const xAxis = d3.axisBottom(xScale).ticks(10, "~s");
-  const yAxis = d3.axisLeft(yScale).ticks(6);
+  var xAxis = d3.axisBottom(xScale).ticks(10, "~s");
+  var yAxis = d3.axisLeft(yScale).ticks(6);
 
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
 
   // Legend
-  const legend = legendGroup.selectAll('g')
+  var legend = legendGroup.selectAll('g')
     .data(regions)
     .enter()
     .append('g')
-    .attr('transform', (d,i) => `translate(0, ${i*25})`);
+    .attr('transform', function(d, i) {
+      return 'translate(0,' + (i * 25) + ')';
+    });
 
   legend.append('rect')
     .attr('width', 20)
     .attr('height', 20)
-    .attr('fill', d => colorScale(d));
+    .attr('fill', function(d) {
+      return colorScale(d);
+    });
 
   legend.append('text')
     .attr('x', 25)
     .attr('y', 15)
-    .text(d => d);
+    .text(function(d) { return d; });
 
   function drawScatter(filteredData) {
-    const circles = g.selectAll('circle')
-      .data(filteredData, d => d.country);
+    var circles = g.selectAll('circle')
+      .data(filteredData, function(d) { return d.country; });
 
     circles.exit().remove();
 
     circles
-      .attr('cx', d => xScale(d.gdp))
-      .attr('cy', d => yScale(d.animalProtein))
-      .attr('fill', d => colorScale(d.region));
+      .attr('cx', function(d) { return xScale(d.gdp); })
+      .attr('cy', function(d) { return yScale(d.animalProtein); })
+      .attr('fill', function(d) { return colorScale(d.region); });
 
     circles.enter()
       .append('circle')
-      .attr('cx', d => xScale(d.gdp))
-      .attr('cy', d => yScale(d.animalProtein))
+      .attr('cx', function(d) { return xScale(d.gdp); })
+      .attr('cy', function(d) { return yScale(d.animalProtein); })
       .attr('r', 6)
-      .attr('fill', d => colorScale(d.region))
+      .attr('fill', function(d) { return colorScale(d.region); })
       .attr('stroke', 'black')
       .attr('stroke-width', 0.7)
-      .on('mouseover', (event, d) => {
+      .on('mouseover', function(event, d) {
         tooltip.style('opacity', 1)
-          .html(`<strong>Continent: ${d.region}</strong><br/>
-            GDP per capita: $${formatNumber(d.gdp)}<br/>
-            Share of Daily Calories from Animal Protein: ${d.animalProtein.toFixed(2)}%`)
+          .html(
+            '<strong>Continent: ' + d.region + '</strong><br/>' +
+            'GDP per capita: $' + formatNumber(d.gdp) + '<br/>' +
+            'Share of Daily Calories from Animal Protein: ' + d.animalProtein.toFixed(2) + '%'
+          )
           .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY - 50) + 'px');
       })
-      .on('mousemove', (event) => {
+      .on('mousemove', function(event) {
         tooltip.style('left', (event.pageX + 10) + 'px')
                .style('top', (event.pageY - 50) + 'px');
       })
-      .on('mouseout', () => {
+      .on('mouseout', function() {
         tooltip.style('opacity', 0);
       });
   }
 
   drawScatter(data);
 
-  d3.select('#btn-all').on('click', () => drawScatter(data));
-  d3.select('#btn-high').on('click', () => {
-    const filtered = data.filter(d => d.gdp > 30000);
+  d3.select('#btn-all').on('click', function() {
+    drawScatter(data);
+  });
+
+  d3.select('#btn-high').on('click', function() {
+    var filtered = data.filter(function(d) {
+      return d.gdp > 30000;
+    });
     drawScatter(filtered);
   });
-  d3.select('#btn-low').on('click', () => {
-    const filtered = data.filter(d => d.gdp < 5000);
+
+  d3.select('#btn-low').on('click', function() {
+    var filtered = data.filter(function(d) {
+      return d.gdp < 5000;
+    });
     drawScatter(filtered);
   });
 });
 </script>
+
 </body>
 </html>
