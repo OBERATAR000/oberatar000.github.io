@@ -46,6 +46,13 @@
   <p class="scene-description" id="desc-all">
     This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
   </p>
+  <p class="scene-description" id="desc-high" style="display: none;">
+    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).
+  </p>
+  <p class="scene-description" id="desc-low" style="display: none;">
+    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).
+  </p>
+
   <button id="btn-all">All Countries</button>
   <button id="btn-high">High Income (GDP &gt; 30k)</button>
   <button id="btn-low">Low Income (GDP &lt; 5k)</button>
@@ -91,6 +98,7 @@
     d.animalProtein = +d["Share of the daily calorie supply that comes from animal protein"];
     d.country = d.Entity;
     d.region = d["World regions according to OWID"];
+    d.Code = d.Code; // Country abbreviation
     return d;
   }).then(function(data) {
     data = data.filter(d => d.gdp > 0 && d.animalProtein >= 0);
@@ -147,7 +155,9 @@
         .on("mouseover", function(event, d) {
           tooltip.transition().duration(150).style("opacity", 1);
           tooltip.html(
-              "<strong>Country:</strong> " + d.Code + "<br/>" 
+              "<strong>Country:</strong> " + d.Code + "<br/>" +
+              "<strong>GDP:</strong> $" + d3.format(",")(d.gdp) + "<br/>" +
+              "<strong>Animal Protein:</strong> " + d.animalProtein + "%"
             )
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 40) + "px");
@@ -164,6 +174,8 @@
 
     function updateScene(scene) {
       d3.select("#desc-all").style("display", scene === "all" ? "block" : "none");
+      d3.select("#desc-high").style("display", scene === "high" ? "block" : "none");
+      d3.select("#desc-low").style("display", scene === "low" ? "block" : "none");
     }
 
     drawScatter(data);
@@ -188,4 +200,3 @@
 
 </body>
 </html>
-
