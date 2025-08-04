@@ -12,29 +12,29 @@
     svg {
       display: block;
       margin-top: 20px;
-      background: none;
-    }
-    #buttons {
-      margin-bottom: 15px;
     }
     button {
       margin-right: 10px;
-      padding: 8px 15px;
+      padding: 6px 12px;
       cursor: pointer;
-      border: 1px solid #888;
-      border-radius: 4px;
+      border: 1px solid #aaa;
+      border-radius: 3px;
       background-color: white;
     }
-    .tooltip-box {
+    .tooltip {
+      position: absolute;
+      background: white;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      padding: 8px;
+      font-size: 13px;
       pointer-events: none;
-      font-size: 12px;
-      fill: #000;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+      opacity: 0;
     }
-    .tooltip-bg {
-      fill: #fff;
-      stroke: #333;
-      stroke-width: 0.5;
-      opacity: 0.9;
+    .scene-description {
+      margin: 10px 0;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -42,183 +42,150 @@
 
 <h1>Animal Protein Consumption vs GDP per Capita (2022)</h1>
 
-<p id="scene-desc" style="margin-bottom: 10px; font-size: 14px; color: #333;">
-  This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
-</p>
-
-<div id="buttons">
+<div>
+  <p class="scene-description" id="desc-all">
+    This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
+  </p>
   <button id="btn-all">All Countries</button>
   <button id="btn-high">High Income (GDP &gt; 30k)</button>
   <button id="btn-low">Low Income (GDP &lt; 5k)</button>
 </div>
 
 <svg width="800" height="600"></svg>
+<div class="tooltip" id="tooltip"></div>
 
 <script>
-  var csvUrl = 'data416.csv';
+  var csvUrl = "data416.csv";
 
-  var margin = {top: 50, right: 160, bottom: 60, left: 80};
+  var margin = { top: 50, right: 160, bottom: 60, left: 80 };
   var width = 800 - margin.left - margin.right;
   var height = 600 - margin.top - margin.bottom;
 
+  var svg = d3.select("svg");
+  var g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
   var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+  var tooltip = d3.select("#tooltip");
 
-  var svg = d3.select('svg');
-  var g = svg.append('g')
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  var xAxisGroup = g.append("g").attr("transform", "translate(0," + height + ")");
+  var yAxisGroup = g.append("g");
 
-  var xAxisGroup = g.append('g')
-    .attr('transform', 'translate(0,' + height + ')');
+  g.append("text")
+    .attr("x", width / 2)
+    .attr("y", height + 45)
+    .attr("text-anchor", "middle")
+    .text("GDP per Capita");
 
-  var yAxisGroup = g.append('g');
+  g.append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", -50)
+    .attr("text-anchor", "middle")
+    .text("Share of Daily Calories from Animal Protein (%)");
 
-  g.append('text')
-    .attr('x', width / 2)
-    .attr('y', height + 45)
-    .attr('text-anchor', 'middle')
-    .text('GDP per Capita (linear scale)');
-
-  g.append('text')
-    .attr('transform', 'rotate(-90)')
-    .attr('x', -height / 2)
-    .attr('y', -50)
-    .attr('text-anchor', 'middle')
-    .text('Share of Daily Calories from Animal Protein (%)');
-
-  var legendGroup = svg.append('g')
-    .attr('transform', 'translate(' + (width + margin.left + 20) + ',' + margin.top + ')');
-
-  var tooltipGroup = g.append("g").style("display", "none");
-
-  tooltipGroup.append("rect")
-    .attr("class", "tooltip-bg")
-    .attr("width", 180)
-    .attr("height", 55)
-    .attr("rx", 6)
-    .attr("ry", 6);
-
-  var tooltipText = tooltipGroup.append("text")
-    .attr("class", "tooltip-box")
-    .attr("x", 8)
-    .attr("y", 16);
-
-  var tooltipLines = [
-    tooltipGroup.append("text").attr("class", "tooltip-box").attr("x", 8).attr("y", 16),
-    tooltipGroup.append("text").attr("class", "tooltip-box").attr("x", 8).attr("y", 32),
-    tooltipGroup.append("text").attr("class", "tooltip-box").attr("x", 8).attr("y", 48),
-  ];
+  var legendGroup = svg.append("g")
+    .attr("transform", "translate(" + (width + margin.left + 20) + "," + margin.top + ")");
 
   d3.csv(csvUrl, function(d) {
-    d.gdp = +d['GDP per capita'];
-    d.animalProtein = +d['Share of the daily calorie supply that comes from animal protein'];
+    d.gdp = +d["GDP per capita"];
+    d.animalProtein = +d["Share of the daily calorie supply that comes from animal protein"];
     d.country = d.Entity;
-    d.region = d['World regions according to OWID'];
+    d.region = d["World regions according to OWID"];
     return d;
   }).then(function(data) {
-    data = data.filter(function(d) {
-      return d.gdp > 0 && d.animalProtein >= 0;
-    });
+    data = data.filter(d => d.gdp > 0 && d.animalProtein >= 0);
 
-    var regions = [...new Set(data.map(d => d.region))];
+    var regions = Array.from(new Set(data.map(d => d.region)));
     colorScale.domain(regions);
 
-    var xExtent = d3.extent(data, function(d) { return d.gdp; });
-    var xScale = d3.scaleLinear().domain(xExtent).range([0, width]).nice();
+    var xScale = d3.scaleLinear()
+      .domain([0, d3.max(data, d => d.gdp)])
+      .range([0, width]);
 
-    var maxY = Math.ceil(d3.max(data, d => d.animalProtein) / 10) * 10;
-    var yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
+    var yScale = d3.scaleLinear()
+      .domain([0, d3.max(data, d => d.animalProtein)])
+      .range([height, 0]);
 
-    var xAxis = d3.axisBottom(xScale).ticks(10, "~s");
-    var yAxis = d3.axisLeft(yScale).ticks(6);
+    xAxisGroup.call(d3.axisBottom(xScale).ticks(10));
+    yAxisGroup.call(d3.axisLeft(yScale).ticks(6));
 
-    xAxisGroup.call(xAxis);
-    yAxisGroup.call(yAxis);
-
-    var legend = legendGroup.selectAll('g')
+    var legend = legendGroup.selectAll("g")
       .data(regions)
       .enter()
-      .append('g')
-      .attr('transform', function(d, i) {
-        return 'translate(0,' + (i * 25) + ')';
-      });
+      .append("g")
+      .attr("transform", (d, i) => "translate(0," + i * 22 + ")");
 
-    legend.append('rect')
-      .attr('width', 20)
-      .attr('height', 20)
-      .attr('fill', colorScale);
+    legend.append("rect")
+      .attr("width", 18)
+      .attr("height", 18)
+      .attr("fill", d => colorScale(d));
 
-    legend.append('text')
-      .attr('x', 25)
-      .attr('y', 15)
+    legend.append("text")
+      .attr("x", 24)
+      .attr("y", 14)
       .text(d => d);
 
     function drawScatter(filteredData) {
-      var circles = g.selectAll('circle')
+      var circles = g.selectAll("circle")
         .data(filteredData, d => d.country);
 
       circles.exit().remove();
 
       circles
-        .attr('cx', d => xScale(d.gdp))
-        .attr('cy', d => yScale(d.animalProtein))
-        .attr('fill', d => colorScale(d.region));
+        .attr("cx", d => xScale(d.gdp))
+        .attr("cy", d => yScale(d.animalProtein))
+        .attr("fill", d => colorScale(d.region));
 
       circles.enter()
-        .append('circle')
-        .attr('cx', d => xScale(d.gdp))
-        .attr('cy', d => yScale(d.animalProtein))
-        .attr('r', 6)
-        .attr('fill', d => colorScale(d.region))
-        .attr('stroke', 'black')
-        .attr('stroke-width', 0.7)
-        .on('mouseover', function(event, d) {
-          var x = xScale(d.gdp);
-          var y = yScale(d.animalProtein);
-
-          tooltipGroup.attr("transform", "translate(" + (x + 10) + "," + (y - 30) + ")");
-          tooltipLines[0].text("Country: " + d.country);
-          tooltipLines[1].text("GDP per capita: $" + d3.format(",")(d.gdp));
-          tooltipLines[2].text("Animal protein: " + d.animalProtein.toFixed(2) + "%");
-          tooltipGroup.style("display", null);
+        .append("circle")
+        .attr("cx", d => xScale(d.gdp))
+        .attr("cy", d => yScale(d.animalProtein))
+        .attr("r", 6)
+        .attr("fill", d => colorScale(d.region))
+        .attr("stroke", "black")
+        .attr("stroke-width", 0.7)
+        .on("mouseover", function(event, d) {
+          tooltip.transition().duration(150).style("opacity", 1);
+          tooltip.html(
+              "<strong>Country:</strong> " + d.Entity + "<br/>" 
+            )
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 40) + "px");
         })
-        .on('mouseout', function() {
-          tooltipGroup.style("display", "none");
+        .on("mousemove", function(event) {
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 40) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.transition().duration(150).style("opacity", 0);
         });
     }
 
     function updateScene(scene) {
-      let desc = "";
-      if (scene === "all") {
-        desc = "This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.";
-      } else if (scene === "high") {
-        desc = "This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).";
-      } else if (scene === "low") {
-        desc = "This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).";
-      }
-      d3.select("#scene-desc").text(desc);
+      d3.select("#desc-all").style("display", scene === "all" ? "block" : "none");
     }
 
     drawScatter(data);
-    updateScene('all');
+    updateScene("all");
 
-    d3.select('#btn-all').on('click', function() {
+    d3.select("#btn-all").on("click", function() {
       drawScatter(data);
-      updateScene('all');
+      updateScene("all");
     });
 
-    d3.select('#btn-high').on('click', function() {
-      var filtered = data.filter(d => d.gdp > 30000);
-      drawScatter(filtered);
-      updateScene('high');
+    d3.select("#btn-high").on("click", function() {
+      drawScatter(data.filter(d => d.gdp > 30000));
+      updateScene("high");
     });
 
-    d3.select('#btn-low').on('click', function() {
-      var filtered = data.filter(d => d.gdp < 5000);
-      drawScatter(filtered);
-      updateScene('low');
+    d3.select("#btn-low").on("click", function() {
+      drawScatter(data.filter(d => d.gdp < 5000));
+      updateScene("low");
     });
   });
 </script>
 
 </body>
 </html>
+
