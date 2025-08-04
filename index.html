@@ -12,6 +12,11 @@
     svg {
       display: block;
       margin-top: 20px;
+      border: 1px solid #ccc;
+      background: none;
+    }
+    #buttons {
+      margin-bottom: 15px;
     }
     button {
       margin-right: 10px;
@@ -34,31 +39,20 @@
       max-width: 220px;
       line-height: 1.4;
     }
-    .scene-description {
-      margin: 12px 0 8px;
-      font-size: 14px;
-      color: #333;
-    }
   </style>
 </head>
 <body>
 
 <h1>Animal Protein Consumption vs GDP per Capita (2022)</h1>
-<div>
+
+<p id="scene-desc" style="margin-bottom: 10px; font-size: 14px; color: #333;">
+  This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
+</p>
+
+<div id="buttons">
   <button id="btn-all">All Countries</button>
-  <p class="scene-description" id="desc-all">
-    This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
-  </p>
-
   <button id="btn-high">High Income (GDP &gt; 30k)</button>
-  <p class="scene-description" id="desc-high" style="display: none;">
-    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).
-  </p>
-
   <button id="btn-low">Low Income (GDP &lt; 5k)</button>
-  <p class="scene-description" id="desc-low" style="display: none;">
-    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).
-  </p>
 </div>
 
 <svg width="800" height="600"></svg>
@@ -72,9 +66,7 @@
   var height = 600 - margin.top - margin.bottom;
 
   var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
   var tooltip = d3.select('.tooltip');
-
   var svg = d3.select('svg');
   var g = svg.append('g')
     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -88,7 +80,7 @@
     .attr('x', width / 2)
     .attr('y', height + 45)
     .attr('text-anchor', 'middle')
-    .text('GDP per Capita (log scale)');
+    .text('GDP per Capita (linear scale)');
 
   g.append('text')
     .attr('transform', 'rotate(-90)')
@@ -199,9 +191,15 @@
     }
 
     function updateScene(scene) {
-      d3.select('#desc-all').style('display', scene === 'all' ? 'block' : 'none');
-      d3.select('#desc-high').style('display', scene === 'high' ? 'block' : 'none');
-      d3.select('#desc-low').style('display', scene === 'low' ? 'block' : 'none');
+      var desc = "";
+      if (scene === "all") {
+        desc = "This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.";
+      } else if (scene === "high") {
+        desc = "This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).";
+      } else if (scene === "low") {
+        desc = "This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).";
+      }
+      d3.select("#scene-desc").text(desc);
     }
 
     drawScatter(data);
@@ -213,17 +211,13 @@
     });
 
     d3.select('#btn-high').on('click', function() {
-      var filtered = data.filter(function(d) {
-        return d.gdp > 30000;
-      });
+      var filtered = data.filter(function(d) { return d.gdp > 30000; });
       drawScatter(filtered);
       updateScene('high');
     });
 
     d3.select('#btn-low').on('click', function() {
-      var filtered = data.filter(function(d) {
-        return d.gdp < 5000;
-      });
+      var filtered = data.filter(function(d) { return d.gdp < 5000; });
       drawScatter(filtered);
       updateScene('low');
     });
@@ -232,4 +226,3 @@
 
 </body>
 </html>
-
