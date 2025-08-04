@@ -167,7 +167,9 @@ d3.csv(csvUrl, d => ({
       .attr('stroke-width', 0.7)
       .on('mouseover', (event, d) => {
         tooltip.style('opacity', 1)
-          .html(`Country: <strong>${d.country}</strong>`)
+          .html(`<strong>Continent: ${d.region}</strong><br/>
+                 GDP per capita: $${formatNumber(d.gdp)}<br/>
+                 Share of Daily Calories from Animal Protein: ${d.animalProtein.toFixed(2)}%`)
           .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY - 50) + 'px');
       })
