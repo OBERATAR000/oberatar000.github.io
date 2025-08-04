@@ -10,8 +10,8 @@
       padding: 20px;
     }
     svg {
-      border: 1px solid #ccc;
-      background: #fafafa;
+      display: block;
+      margin-top: 20px;
     }
     button {
       margin-right: 10px;
@@ -35,183 +35,201 @@
       line-height: 1.4;
     }
     .scene-description {
-      margin-top: 10px;
-      margin-bottom: 20px;
-      font-size: 16px;
-      max-width: 760px;
+      margin: 12px 0 8px;
+      font-size: 14px;
+      color: #333;
     }
   </style>
 </head>
 <body>
 
 <h1>Animal Protein Consumption vs GDP per Capita (2022)</h1>
-
-<!-- Scene Descriptions -->
-<div id="scene-desc" class="scene-description">
-  This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
-</div>
-
 <div>
   <button id="btn-all">All Countries</button>
+  <p class="scene-description" id="desc-all">
+    This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
+  </p>
+
   <button id="btn-high">High Income (GDP &gt; 30k)</button>
+  <p class="scene-description" id="desc-high" style="display: none;">
+    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).
+  </p>
+
   <button id="btn-low">Low Income (GDP &lt; 5k)</button>
+  <p class="scene-description" id="desc-low" style="display: none;">
+    This scene dives deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).
+  </p>
 </div>
 
 <svg width="800" height="600"></svg>
 <div class="tooltip"></div>
 
 <script>
-var csvUrl = 'data416.csv';
+  var csvUrl = 'data416.csv';
 
-var margin = {top: 50, right: 160, bottom: 60, left: 80};
-var width = 800 - margin.left - margin.right;
-var height = 600 - margin.top - margin.bottom;
+  var margin = {top: 50, right: 160, bottom: 60, left: 80};
+  var width = 800 - margin.left - margin.right;
+  var height = 600 - margin.top - margin.bottom;
 
-var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-var tooltip = d3.select('.tooltip');
-var svg = d3.select('svg');
+  var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-var g = svg.append('g')
-  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  var tooltip = d3.select('.tooltip');
 
-var xAxisGroup = g.append('g').attr('transform', 'translate(0,' + height + ')');
-var yAxisGroup = g.append('g');
+  var svg = d3.select('svg');
+  var g = svg.append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-g.append('text')
-  .attr('x', width / 2)
-  .attr('y', height + 45)
-  .attr('text-anchor', 'middle')
-  .text('GDP per Capita (log scale)');
+  var xAxisGroup = g.append('g')
+    .attr('transform', 'translate(0,' + height + ')');
 
-g.append('text')
-  .attr('transform', 'rotate(-90)')
-  .attr('x', -height / 2)
-  .attr('y', -50)
-  .attr('text-anchor', 'middle')
-  .text('Share of Daily Calories from Animal Protein (%)');
+  var yAxisGroup = g.append('g');
 
-var legendGroup = svg.append('g')
-  .attr('transform', 'translate(' + (width + margin.left + 20) + ',' + margin.top + ')')
-  .attr('class', 'legend');
+  g.append('text')
+    .attr('x', width / 2)
+    .attr('y', height + 45)
+    .attr('text-anchor', 'middle')
+    .text('GDP per Capita (log scale)');
 
-var formatNumber = d3.format(',');
+  g.append('text')
+    .attr('transform', 'rotate(-90)')
+    .attr('x', -height / 2)
+    .attr('y', -50)
+    .attr('text-anchor', 'middle')
+    .text('Share of Daily Calories from Animal Protein (%)');
 
-d3.csv(csvUrl, function(d) {
-  d.gdp = +d['GDP per capita'];
-  d.animalProtein = +d['Share of the daily calorie supply that comes from animal protein'];
-  d.country = d.Entity;
-  d.region = d['World regions according to OWID'];
-  return d;
-}).then(function(data) {
-  data = data.filter(function(d) {
-    return d.gdp > 0 && d.animalProtein >= 0;
-  });
+  var legendGroup = svg.append('g')
+    .attr('transform', 'translate(' + (width + margin.left + 20) + ',' + margin.top + ')')
+    .attr('class', 'legend');
 
-  var regions = [];
-  data.forEach(function(d) {
-    if (regions.indexOf(d.region) === -1) {
-      regions.push(d.region);
-    }
-  });
-  colorScale.domain(regions);
+  var formatNumber = d3.format(',');
 
-  var xExtent = d3.extent(data, function(d) { return d.gdp; });
-  var xScale = d3.scaleLog().domain(xExtent).range([0, width]).nice();
-
-  var maxY = Math.ceil(d3.max(data, function(d) { return d.animalProtein; }) / 10) * 10;
-  var yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
-
-  var xAxis = d3.axisBottom(xScale).ticks(10, "~s");
-  var yAxis = d3.axisLeft(yScale).ticks(6);
-  xAxisGroup.call(xAxis);
-  yAxisGroup.call(yAxis);
-
-  var legend = legendGroup.selectAll('g')
-    .data(regions)
-    .enter()
-    .append('g')
-    .attr('transform', function(d, i) {
-      return 'translate(0,' + (i * 25) + ')';
+  d3.csv(csvUrl, function(d) {
+    d.gdp = +d['GDP per capita'];
+    d.animalProtein = +d['Share of the daily calorie supply that comes from animal protein'];
+    d.country = d.Entity;
+    d.region = d['World regions according to OWID'];
+    return d;
+  }).then(function(data) {
+    data = data.filter(function(d) {
+      return d.gdp > 0 && d.animalProtein >= 0;
     });
 
-  legend.append('rect')
-    .attr('width', 20)
-    .attr('height', 20)
-    .attr('fill', function(d) { return colorScale(d); });
+    var regions = [];
+    data.forEach(function(d) {
+      if (regions.indexOf(d.region) === -1) {
+        regions.push(d.region);
+      }
+    });
+    colorScale.domain(regions);
 
-  legend.append('text')
-    .attr('x', 25)
-    .attr('y', 15)
-    .text(function(d) { return d; });
+    var xExtent = d3.extent(data, function(d) { return d.gdp; });
+    var xScale = d3.scaleLog()
+      .domain(xExtent)
+      .range([0, width])
+      .nice();
 
-  function drawScatter(filteredData) {
-    var circles = g.selectAll('circle')
-      .data(filteredData, function(d) { return d.country; });
+    var maxAnimalProtein = d3.max(data, function(d) { return d.animalProtein; });
+    var maxY = Math.ceil(maxAnimalProtein / 10) * 10;
+    var yScale = d3.scaleLinear()
+      .domain([0, maxY])
+      .range([height, 0]);
 
-    circles.exit().remove();
+    var xAxis = d3.axisBottom(xScale).ticks(10, "~s");
+    var yAxis = d3.axisLeft(yScale).ticks(6);
 
-    circles
-      .attr('cx', function(d) { return xScale(d.gdp); })
-      .attr('cy', function(d) { return yScale(d.animalProtein); })
-      .attr('fill', function(d) { return colorScale(d.region); });
+    xAxisGroup.call(xAxis);
+    yAxisGroup.call(yAxis);
 
-    circles.enter()
-      .append('circle')
-      .attr('cx', function(d) { return xScale(d.gdp); })
-      .attr('cy', function(d) { return yScale(d.animalProtein); })
-      .attr('r', 6)
-      .attr('fill', function(d) { return colorScale(d.region); })
-      .attr('stroke', 'black')
-      .attr('stroke-width', 0.7)
-      .on('mouseover', function(event, d) {
-        tooltip.style('opacity', 1)
-          .html(
-            '<strong>Continent: ' + d.region + '</strong><br/>' +
-            'GDP per capita: $' + formatNumber(d.gdp) + '<br/>' +
-            'Share of Daily Calories from Animal Protein: ' + d.animalProtein.toFixed(2) + '%'
-          )
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 50) + 'px');
-      })
-      .on('mousemove', function(event) {
-        tooltip.style('left', (event.pageX + 10) + 'px')
-               .style('top', (event.pageY - 50) + 'px');
-      })
-      .on('mouseout', function() {
-        tooltip.style('opacity', 0);
+    var legend = legendGroup.selectAll('g')
+      .data(regions)
+      .enter()
+      .append('g')
+      .attr('transform', function(d, i) {
+        return 'translate(0,' + (i * 25) + ')';
       });
-  }
 
-  drawScatter(data);
+    legend.append('rect')
+      .attr('width', 20)
+      .attr('height', 20)
+      .attr('fill', function(d) {
+        return colorScale(d);
+      });
 
-  d3.select('#btn-all').on('click', function() {
+    legend.append('text')
+      .attr('x', 25)
+      .attr('y', 15)
+      .text(function(d) { return d; });
+
+    function drawScatter(filteredData) {
+      var circles = g.selectAll('circle')
+        .data(filteredData, function(d) { return d.country; });
+
+      circles.exit().remove();
+
+      circles
+        .attr('cx', function(d) { return xScale(d.gdp); })
+        .attr('cy', function(d) { return yScale(d.animalProtein); })
+        .attr('fill', function(d) { return colorScale(d.region); });
+
+      circles.enter()
+        .append('circle')
+        .attr('cx', function(d) { return xScale(d.gdp); })
+        .attr('cy', function(d) { return yScale(d.animalProtein); })
+        .attr('r', 6)
+        .attr('fill', function(d) { return colorScale(d.region); })
+        .attr('stroke', 'black')
+        .attr('stroke-width', 0.7)
+        .on('mouseover', function(event, d) {
+          tooltip.style('opacity', 1)
+            .html(
+              '<strong>Continent: ' + d.region + '</strong><br/>' +
+              'GDP per capita: $' + formatNumber(d.gdp) + '<br/>' +
+              'Share of Daily Calories from Animal Protein: ' + d.animalProtein.toFixed(2) + '%'
+            )
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 50) + 'px');
+        })
+        .on('mousemove', function(event) {
+          tooltip.style('left', (event.pageX + 10) + 'px')
+                 .style('top', (event.pageY - 50) + 'px');
+        })
+        .on('mouseout', function() {
+          tooltip.style('opacity', 0);
+        });
+    }
+
+    function updateScene(scene) {
+      d3.select('#desc-all').style('display', scene === 'all' ? 'block' : 'none');
+      d3.select('#desc-high').style('display', scene === 'high' ? 'block' : 'none');
+      d3.select('#desc-low').style('display', scene === 'low' ? 'block' : 'none');
+    }
+
     drawScatter(data);
-    d3.select('#scene-desc').text(
-      'This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.'
-    );
-  });
+    updateScene('all');
 
-  d3.select('#btn-high').on('click', function() {
-    var filtered = data.filter(function(d) {
-      return d.gdp > 30000;
+    d3.select('#btn-all').on('click', function() {
+      drawScatter(data);
+      updateScene('all');
     });
-    drawScatter(filtered);
-    d3.select('#scene-desc').text(
-      'This scene dived deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).'
-    );
-  });
 
-  d3.select('#btn-low').on('click', function() {
-    var filtered = data.filter(function(d) {
-      return d.gdp < 5000;
+    d3.select('#btn-high').on('click', function() {
+      var filtered = data.filter(function(d) {
+        return d.gdp > 30000;
+      });
+      drawScatter(filtered);
+      updateScene('high');
     });
-    drawScatter(filtered);
-    d3.select('#scene-desc').text(
-      'This scene dived deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).'
-    );
+
+    d3.select('#btn-low').on('click', function() {
+      var filtered = data.filter(function(d) {
+        return d.gdp < 5000;
+      });
+      drawScatter(filtered);
+      updateScene('low');
+    });
   });
-});
 </script>
 
 </body>
 </html>
+
