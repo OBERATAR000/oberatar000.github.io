@@ -1,44 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Animal Protein vs GDP per Capita Scatterplot</title>
-<script src="https://d3js.org/d3.v5.min.js"></script>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-  }
-  svg {
-    border: 1px solid #ccc;
-    background: #fafafa;
-  }
-  button {
-    margin-right: 10px;
-    padding: 8px 15px;
-    cursor: pointer;
-    border: 1px solid #888;
-    border-radius: 4px;
-    background-color: white;
-  }
-  .tooltip {
-    position: absolute;
-    background: white;
-    padding: 10px 14px;
-    border: 1px solid #666;
-    border-radius: 6px;
-    pointer-events: none;
-    font-size: 14px;
-    opacity: 0;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    max-width: 220px;
-    line-height: 1.4;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Animal Protein vs GDP per Capita Scatterplot</title>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    svg {
+      border: 1px solid #ccc;
+      background: #fafafa;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 15px;
+      cursor: pointer;
+      border: 1px solid #888;
+      border-radius: 4px;
+      background-color: white;
+    }
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 10px 14px;
+      border: 1px solid #666;
+      border-radius: 6px;
+      pointer-events: none;
+      font-size: 14px;
+      opacity: 0;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      max-width: 220px;
+      line-height: 1.4;
+    }
+    .scene-description {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      max-width: 760px;
+    }
+  </style>
 </head>
 <body>
 
 <h1>Animal Protein Consumption vs GDP per Capita (2022)</h1>
+
+<!-- Scene Descriptions -->
+<div id="scene-desc" class="scene-description">
+  This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.
+</div>
+
 <div>
   <button id="btn-all">All Countries</button>
   <button id="btn-high">High Income (GDP &gt; 30k)</button>
@@ -56,16 +68,13 @@ var width = 800 - margin.left - margin.right;
 var height = 600 - margin.top - margin.bottom;
 
 var colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
 var tooltip = d3.select('.tooltip');
-
 var svg = d3.select('svg');
+
 var g = svg.append('g')
   .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-var xAxisGroup = g.append('g')
-  .attr('transform', 'translate(0,' + height + ')');
-
+var xAxisGroup = g.append('g').attr('transform', 'translate(0,' + height + ')');
 var yAxisGroup = g.append('g');
 
 g.append('text')
@@ -94,13 +103,10 @@ d3.csv(csvUrl, function(d) {
   d.region = d['World regions according to OWID'];
   return d;
 }).then(function(data) {
-  
-  // filter out invalid values
   data = data.filter(function(d) {
     return d.gdp > 0 && d.animalProtein >= 0;
   });
 
-  // extract unique regions
   var regions = [];
   data.forEach(function(d) {
     if (regions.indexOf(d.region) === -1) {
@@ -110,25 +116,16 @@ d3.csv(csvUrl, function(d) {
   colorScale.domain(regions);
 
   var xExtent = d3.extent(data, function(d) { return d.gdp; });
-  var xScale = d3.scaleLog()
-    .domain(xExtent)
-    .range([0, width])
-    .nice();
+  var xScale = d3.scaleLog().domain(xExtent).range([0, width]).nice();
 
-  // Round max Y up to nearest 10 for cleaner ticks
-  var maxAnimalProtein = d3.max(data, function(d) { return d.animalProtein; });
-  var maxY = Math.ceil(maxAnimalProtein / 10) * 10;
-  var yScale = d3.scaleLinear()
-    .domain([0, maxY])
-    .range([height, 0]);
+  var maxY = Math.ceil(d3.max(data, function(d) { return d.animalProtein; }) / 10) * 10;
+  var yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
 
   var xAxis = d3.axisBottom(xScale).ticks(10, "~s");
   var yAxis = d3.axisLeft(yScale).ticks(6);
-
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
 
-  // Legend
   var legend = legendGroup.selectAll('g')
     .data(regions)
     .enter()
@@ -140,9 +137,7 @@ d3.csv(csvUrl, function(d) {
   legend.append('rect')
     .attr('width', 20)
     .attr('height', 20)
-    .attr('fill', function(d) {
-      return colorScale(d);
-    });
+    .attr('fill', function(d) { return colorScale(d); });
 
   legend.append('text')
     .attr('x', 25)
@@ -191,6 +186,9 @@ d3.csv(csvUrl, function(d) {
 
   d3.select('#btn-all').on('click', function() {
     drawScatter(data);
+    d3.select('#scene-desc').text(
+      'This scene shows the animal protein consumption vs GDP per capita in 2022 for all countries, giving an insight into how much animal protein people consume within their country and their economic status.'
+    );
   });
 
   d3.select('#btn-high').on('click', function() {
@@ -198,6 +196,9 @@ d3.csv(csvUrl, function(d) {
       return d.gdp > 30000;
     });
     drawScatter(filtered);
+    d3.select('#scene-desc').text(
+      'This scene dived deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with higher economic wealth per person (GDP > 30k).'
+    );
   });
 
   d3.select('#btn-low').on('click', function() {
@@ -205,6 +206,9 @@ d3.csv(csvUrl, function(d) {
       return d.gdp < 5000;
     });
     drawScatter(filtered);
+    d3.select('#scene-desc').text(
+      'This scene dived deeper into the relationship of animal protein consumption vs GDP per capita in 2022 for all countries, by specifically showing the animal protein consumption of countries with lower economic wealth per person (GDP < 5k).'
+    );
   });
 });
 </script>
