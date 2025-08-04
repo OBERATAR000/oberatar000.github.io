@@ -118,13 +118,15 @@ d3.csv(csvUrl, d => ({
     .range([0, width])
     .nice();
 
+  // Compute max and round it up to nearest 10 for even y-axis ticks
+  const maxY = Math.ceil(d3.max(data, d => d.animalProtein) / 10) * 10;
+
   const yScale = d3.scaleLinear()
-    .domain([0, d3.max(data, d => d.animalProtein)*1.1])
-    .range([height, 0])
-    .nice();
+    .domain([0, maxY])
+    .range([height, 0]);
 
   const xAxis = d3.axisBottom(xScale).ticks(10, "~s");
-  const yAxis = d3.axisLeft(yScale);
+  const yAxis = d3.axisLeft(yScale).ticks(6);
 
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
@@ -168,8 +170,8 @@ d3.csv(csvUrl, d => ({
       .on('mouseover', (event, d) => {
         tooltip.style('opacity', 1)
           .html(`<strong>Continent: ${d.region}</strong><br/>
-                 GDP per capita: $${formatNumber(d.gdp)}<br/>
-                 Share of Daily Calories from Animal Protein: ${d.animalProtein.toFixed(2)}%`)
+            GDP per capita: $${formatNumber(d.gdp)}<br/>
+            Share of Daily Calories from Animal Protein: ${d.animalProtein.toFixed(2)}%`)
           .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY - 50) + 'px');
       })
