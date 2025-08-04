@@ -123,7 +123,7 @@
     colorScale.domain(regions);
 
     var xExtent = d3.extent(data, function(d) { return d.gdp; });
-    var xScale = d3.scaleLog()
+    var xScale = d3.scaleLinear()
       .domain(xExtent)
       .range([0, width])
       .nice();
